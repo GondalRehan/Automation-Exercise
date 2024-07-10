@@ -1,5 +1,9 @@
 package Pages;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+
 import org.bouncycastle.crypto.params.TweakableBlockCipherParameters;
 import org.junit.Assert;
 import org.openqa.selenium.*;
@@ -8,8 +12,15 @@ import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.Wait;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+//import javax.swing.text.Document;
+//import javax.swing.text.Element;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Google {
 
@@ -93,37 +104,82 @@ private WebDriver driver;
 //        System.out.println(driver.findElement(By.id("result-stats")).getText());
 //        System.out.println("Is result-stats displaying: "+myDynamicElement.isDisplayed());
 //        WebElement resultStats = driver.findElement(By.id("result-stats"));
-        boolean status;
-        try {
-            WebElement resultStats = (new WebDriverWait(driver, Duration.ofSeconds(20))).until(ExpectedConditions.presenceOfElementLocated((By.id("result-stats"))));
-//            WebElement resultStats = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("result-stats")));
-            Assert.assertTrue("Result stats not displayed!", resultStats.isDisplayed());
-            status=resultStats.isDisplayed();
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
-            System.out.println("Page Source: \n" + driver.getPageSource());
-            status=false;
-            throw e;
-        }
+//        boolean status;
+//        try {
+//            WebElement resultStats = (new WebDriverWait(driver, Duration.ofSeconds(20))).until(ExpectedConditions.presenceOfElementLocated((By.id("result-stats"))));
+////            WebElement resultStats = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("result-stats")));
+//            Assert.assertTrue("Result stats not displayed!", resultStats.isDisplayed());
+//            status=resultStats.isDisplayed();
+//        } catch (Exception e) {
+//            System.out.println("Error: " + e.getMessage());
+//            System.out.println("Page Source: \n" + driver.getPageSource());
+//            status=false;
+//            throw e;
+//        }
 //        return resultStats.isDisplayed();
+
+        boolean status = driver.findElement(By.xpath("//h3[normalize-space()='Home - BBC News']")).isDisplayed();
         return status;
     }
 
 
     public boolean numberIsMoreThan(String type, int number) {
-        WebElement resultStats = driver.findElement(By.id("result-stats"));
-        String resultStatsText = resultStats.getText();
+//        WebElement resultStats = driver.findElement(By.id("result-stats"));
+//        String resultStatsText = resultStats.getText();
+//
+//        if (type.equals("results")) {
+//            String resultsText = resultStatsText.split(" ")[1].replace(",", "");
+//            int resultsCount = Integer.parseInt(resultsText);
+//            return (resultsCount > number);
+//        } else if (type.equals("seconds")) {
+//            String secondsText = resultStatsText.split(" ")[3].replace("(", "").replace(")", "").replace("s", "");
+//            double secondsCount = Double.parseDouble(secondsText);
+//            return (secondsCount > number);
+//        }
+//        return false;
+//        System.out.println(driver.getPageSource());
+//        JavascriptExecutor js = (JavascriptExecutor) driver;
+//        WebElement resultStats = (WebElement) js.executeScript("return document.getElementById('result-stats');");
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+//        WebElement resultStats = wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//*[@id='hdtbMenus']/div[2]/div/div")));q
+        //-------------
+        // Parse the page source using JSoup
+        String pageSource = driver.getPageSource();
+        Document doc = Jsoup.parse(pageSource);
+        Element resultStatsElement = doc.selectFirst("#result-stats");
 
-        if (type.equals("results")) {
-            String resultsText = resultStatsText.split(" ")[1].replace(",", "");
-            int resultsCount = Integer.parseInt(resultsText);
-            return (resultsCount > number);
-        } else if (type.equals("seconds")) {
-            String secondsText = resultStatsText.split(" ")[3].replace("(", "").replace(")", "").replace("s", "");
-            double secondsCount = Double.parseDouble(secondsText);
-            return (secondsCount > number);
+        // Extract the text from the result-stats element
+        String resultText = resultStatsElement != null ? resultStatsElement.text() : "";
+        System.out.println("Full result text: " + resultText);
+
+        // Extract the number using regex
+//        String number = extractNumber(resultText);
+//        if (number != null) {
+//            System.out.println("Extracted number: " + number);
+//        } else {
+//            System.out.println("Number not found in the result text");
+//        }
+
+        //--------------
+//        WebElement resultStats = wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("result-stats")));
+//        System.out.println("Rehan search result :" +resultStats.getText());
+//        number = java.util.extractNumber(resultText);
+
+        Pattern p = Pattern.compile("-?\\d+(,\\d+)*?\\.?\\d+?");
+        List<String> numbers = new ArrayList<String>();
+        Matcher m = p.matcher(resultText);
+        while (m.find()) {
+            numbers.add(m.group());
         }
-        return false;
+        System.out.println(numbers);
+
+        if (resultText != null) {
+            return (Integer.parseInt(numbers.get(0).replaceAll(",", "")) > number);
+
+        } else {
+            System.out.println("Element not found");
+            return false;
+        }
     }
 
     public void acceptCookiesIfWarned() {
